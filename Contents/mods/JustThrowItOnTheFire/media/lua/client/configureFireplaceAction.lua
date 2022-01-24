@@ -1,6 +1,5 @@
 require 'Camping/ISUI/ISCampingMenu'
 require 'Camping/CCampfireSystem'
-require 'Camping/camping_fuel'
 
 -- This function calculats the amount of fuel in each item inside the container
 -- If a fireplace parameter is passed, it means the fuel items must also be removed from container
@@ -85,3 +84,4 @@ end
 
 
 Events.OnFillWorldObjectContextMenu.Add(ISWorldObjectContextMenu.AssignExpressFuelingAction)
+print("TULIOS FILE WAS READ ALRIGHT")
