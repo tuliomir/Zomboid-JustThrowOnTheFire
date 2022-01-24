@@ -1,0 +1,6 @@
+Add the option to kick corpses into the fire
+- Will iterate all their inventories
+- Add all fuel items from all of them
+- If the "Cremation" option is on, add the corpses themselves to the fuel
+Use code reference from the ExtraSauce QoL mod (esQoLMP / 2615254987)
+- CorpseMerge
