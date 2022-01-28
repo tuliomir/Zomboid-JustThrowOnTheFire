@@ -2,8 +2,8 @@ require 'Camping/ISUI/ISCampingMenu'
 require 'Camping/CCampfireSystem'
 
 -- This function calculats the amount of fuel in each item inside the container
--- If a fireplace parameter is passed, it means the fuel items must also be removed from container
-local function getContainerFuelAmount(container, campfire)
+-- If the "removeFuelItems" parameter is passed, it means the fuel items must also be removed from container
+local function getContainerFuelAmount(container, removeFuelItems)
     local items = container:getItems()
     local totalFuel = 0
 
@@ -18,14 +18,47 @@ local function getContainerFuelAmount(container, campfire)
         if itemFuel ~= nil then
             totalFuel = totalFuel + itemFuel
 
-            -- We informed a campfire parameter: fuel is being added. Remove the items.
-            if campfire ~= nil then
+            -- We informed a removeFuelItems parameter. Remove the items.
+            if removeFuelItems ~= nil then
                 container:Remove(item)
             end
         end
     end
 
     return totalFuel
+end
+
+local function getZombieInventoriesAroundPlayer(playerNumber)
+    local inventoryList = {}
+
+    -- TODO: these direct member references are bad; is there an interface to get what I need here?
+    local availableBackpacks = getPlayerLoot(playerNumber).inventoryPane.inventoryPage.backpacks
+    local totalFuel = 0
+
+    local currentIndex = 1
+    for i,backpack in ipairs(availableBackpacks) do
+        local inventory = backpack.inventory
+        local inventoryType = inventory:getType()
+
+        -- In case this is a zombie inventory
+        if (inventoryType == "inventorymale" or inventoryType == "inventoryfemale") then
+            local zombieFuelObj = {
+                inventory = backpack.inventory,
+                fuelAmt = 0
+            }
+            zombieFuelObj.fuelAmt = getContainerFuelAmount(backpack.inventory)
+            totalFuel = totalFuel + zombieFuelObj.fuelAmt
+            inventoryList[currentIndex] = zombieFuelObj
+            currentIndex = currentIndex + 1
+        end
+    end
+
+    local returnTable = { 
+        zombiesFound = currentIndex-1,
+        zombiesInventories = inventoryList, 
+        totalFuel = totalFuel 
+    }
+    return returnTable
 end
 
 local function addFuelCallback(worldobjects, container, campfire, playerNumber)
@@ -36,6 +69,10 @@ local function addFuelCallback(worldobjects, container, campfire, playerNumber)
     local args = { x = campfire.x, y = campfire.y, z = campfire.z, fuelAmt = fuelAmt }
     local playerObj = getSpecificPlayer(playerNumber)
     CCampfireSystem.instance:sendCommand(playerObj, 'addFuel', args)
+end
+
+local function kickZombiesIntoFireCallback(worldobjects, zombieInventories, playerNumber)
+
 end
 
 -- This function will be run at Events.OnFillWorldObjectContextMenu , basically at any right button
@@ -85,26 +122,15 @@ end
 Events.OnFillWorldObjectContextMenu.Add(ISWorldObjectContextMenu.AssignExpressFuelingAction)
 
 ISWorldObjectContextMenu.AssignKickZombiesIntoCampfireAction = function (playerNumber, context, worldobjects)
-    local containerList = {}
-    local currentIndex = 1
-    -- TODO: these direct member references are bad; is there an interface to get what I need here?
-    local availableContainersTable = getPlayerLoot(playerNumber).inventoryPane.inventoryPage.backpacks
-    for i,v in ipairs(availableContainersTable) do
-        local inventory = v.inventory
-        local inventoryType = inventory:getType()
+    local zombieFuelObj = getZombieInventoriesAroundPlayer(playerNumber, {})
+    local amountOfZombies = zombieFuelObj.zombiesFound
 
-        -- In case this is a zombie inventory
-        if (inventoryType == "inventorymale" or inventoryType == "inventoryfemale") then
-            containerList[currentIndex] = v.inventory
-            currentIndex = currentIndex + 1
-        end
-    end
-
-    if currentIndex == 1 then
+    if amountOfZombies == 0 then
         return -- No zombies found. Do nothing.
     end
 
-    local labelToShow = "Found " .. currentIndex - 1 .. " zombies"
+    local totalFuel = zombieFuelObj.totalFuel
+    local labelToShow = "Found " .. amountOfZombies .. " zombies: " .. totalFuel
     context:addOption(labelToShow, worldobjects, nil)
 end
 Events.OnFillWorldObjectContextMenu.Add(ISWorldObjectContextMenu.AssignKickZombiesIntoCampfireAction)
