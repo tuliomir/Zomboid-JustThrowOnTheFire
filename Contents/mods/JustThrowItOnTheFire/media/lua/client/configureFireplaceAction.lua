@@ -38,6 +38,14 @@ local function getContainerFuelAmount(container, removeFuelItems)
     return totalFuel
 end
 
+-- Initializing the amount of fuel from the corpses themselves
+local MOD_OPTIONS_CORPSE_FUEL = 60 -- TODO: This will be input from Mod Options
+local corpseFuel = {
+    male = MOD_OPTIONS_CORPSE_FUEL,
+    female = MOD_OPTIONS_CORPSE_FUEL
+}
+
+-- Function to get zombies around the player
 local function getZombieInventoriesAroundPlayer(playerNumber)
     local inventoryList = {}
 
@@ -60,6 +68,14 @@ local function getZombieInventoriesAroundPlayer(playerNumber)
             totalFuel = totalFuel + zombieFuelObj.fuelAmt
             inventoryList[currentIndex] = zombieFuelObj
             currentIndex = currentIndex + 1
+
+            -- Adding fuel from the corpses themselves
+            print(campingFuelType)
+            if inventoryType == "inventoryfemale" then
+                totalFuel = totalFuel + corpseFuel.female
+            else
+                totalFuel = totalFuel + corpseFuel.male
+            end
         end
     end
 
